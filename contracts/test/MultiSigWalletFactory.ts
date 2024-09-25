@@ -2,9 +2,8 @@ import { expect } from "chai";
 import hre from "hardhat";
 const ethers = hre.ethers;
 import { Contract, Signer } from "ethers";
-import { MultiSigWalletFactory } from "../typechain-types/MultiSigWalletFactory";
-import { MultiSigWallet } from "../typechain-types/MultiSigWallet";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
+import { MultiSigWalletFactory } from "../typechain-types";
 
 describe("MultiSigWalletFactory", () => {
   let factory: MultiSigWalletFactory;

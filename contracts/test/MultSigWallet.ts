@@ -2,12 +2,15 @@ import { expect } from "chai";
 import hre from "hardhat";
 const ethers = hre.ethers;
 import { Contract, Signer } from "ethers";
-import { MultiSigWallet } from "../typechain-types/MultiSigWallet";
-import { ExternalContract } from "../typechain-types";
+import { MultiSigWallet } from "../typechain-types/contracts/MultiSigWallet";
+import { ExternalContract, Token } from "../typechain-types/contracts/mock";
+
+const _NATIVE = `0x0000000000000000000000000000000000000001`;
 
 describe("MultiSigWallet", () => {
   let wallet: MultiSigWallet;
   let externalContract: ExternalContract;
+  let token: Token;
   let address: string;
   let externalContractaddress: string;
   let accounts: Signer[];
@@ -18,16 +21,12 @@ describe("MultiSigWallet", () => {
     const ExternalContract = await ethers.getContractFactory(
       "ExternalContract"
     );
-    wallet = (await MultiSigWallet.deploy(
-      [
-        await accounts[0].getAddress(),
-        await accounts[1].getAddress(),
-        await accounts[2].getAddress(),
-      ],
-      2,
-      "MyWallet"
-    )) as MultiSigWallet;
+    const Token = await ethers.getContractFactory(
+      "Token"
+    );
+    wallet = (await MultiSigWallet.deploy([await accounts[0].getAddress(), await accounts[1].getAddress(), await accounts[2].getAddress()], 2, 'wallet'))
     externalContract = (await ExternalContract.deploy()) as ExternalContract;
+    token = (await Token.deploy('Test Token', 'TK', 6, 2000)) as Token;
     address = await wallet.getAddress();
     externalContractaddress = await externalContract.getAddress();
     await accounts[0].sendTransaction({
@@ -51,7 +50,7 @@ describe("MultiSigWallet", () => {
       expect(approvers[1]).to.equal(await accounts[1].getAddress());
       expect(approvers[2]).to.equal(await accounts[2].getAddress());
       expect(quorum).to.equal(2);
-      expect(name).to.equal("MyWallet");
+      expect(name).to.equal("wallet");
     });
 
     it("should receive funds", async () => {
@@ -60,13 +59,14 @@ describe("MultiSigWallet", () => {
     });
   });
 
-  describe("Transfers", () => {
+  describe("Transfers (Native)", () => {
     it("should create a transfer", async () => {
       await wallet
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
       const transfers = await wallet.getTransfers();
 
@@ -93,15 +93,16 @@ describe("MultiSigWallet", () => {
           .connect(accounts[3])
           .createTransfer(
             ethers.parseEther("0.1"),
-            await accounts[2].getAddress()
+            await accounts[2].getAddress(),
+            _NATIVE
           )
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not allow non-approver to approve a transfer", async () => {
       await expect(
         wallet.connect(accounts[3]).approveTransfer(0)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not approve transfer twice by the same approver", async () => {
@@ -109,12 +110,13 @@ describe("MultiSigWallet", () => {
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
       await wallet.connect(accounts[0]).approveTransfer(1);
       await expect(
         wallet.connect(accounts[0]).approveTransfer(1)
-      ).to.be.revertedWith("cannot approve transfer twice");
+      ).to.be.revertedWith("Cannot approve transfer twice");
     });
 
     it("should not approve a transfer that has already been sent", async () => {
@@ -122,14 +124,15 @@ describe("MultiSigWallet", () => {
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
       await wallet.connect(accounts[0]).approveTransfer(2);
       await wallet.connect(accounts[1]).approveTransfer(2);
 
       await expect(
         wallet.connect(accounts[2]).approveTransfer(2)
-      ).to.be.revertedWith("Transfer has already been sent");
+      ).to.be.revertedWith("Transfer already sent");
     });
   });
 
@@ -165,13 +168,13 @@ describe("MultiSigWallet", () => {
         wallet
           .connect(accounts[3])
           .createTransaction(await accounts[1].getAddress(), data)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not allow non-approver to approve a transaction", async () => {
       await expect(
         wallet.connect(accounts[3]).approveTransaction(1)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not approve transaction twice by the same approver", async () => {
@@ -193,7 +196,7 @@ describe("MultiSigWallet", () => {
 
       await expect(
         wallet.connect(accounts[2]).approveTransaction(4)
-      ).to.be.revertedWith("Transaction has already been executed");
+      ).to.be.revertedWith("Transaction already executed");
     });
     it("should expect correct result when excuting externat contract functions", async () => {
         const withdrawalAdress = await accounts[0].getAddress();
