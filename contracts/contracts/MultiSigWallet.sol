@@ -9,18 +9,16 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 /// @notice A multi-signature wallet that requires multiple approvers to execute transfers.
 /// @dev This contract allows for the management of multiple approvers, transfer requests, and approvals.
 contract MultiSigWallet {
-
     using SafeERC20 for IERC20;
 
     struct Transfer {
-        uint id; 
+        uint id;
         uint amount;
-        address payable to; 
+        address payable to;
         uint approvals;
         bool sent;
         address token;
     }
-
 
     struct Transaction {
         uint id;
@@ -43,16 +41,13 @@ contract MultiSigWallet {
         ChangeQuorum
     }
 
-    
-
-
-    address private constant _NATIVE = 0x0000000000000000000000000000000000000001;
+    address private constant _NATIVE =
+        0x0000000000000000000000000000000000000001;
 
     address[] public approvers; // List of approver addresses
     mapping(address => bool) public isApprover; // Mapping to check if an address is an approver
     uint public quorum; // Minimum number of approvers required to approve a transfer
     string public name; // Name of the wallet
-
 
     mapping(uint => Transfer) internal _transfers; // Array of transfers
     mapping(uint => Transaction) internal _transactions; // Mapping of transaction IDs to transactions
@@ -64,11 +59,20 @@ contract MultiSigWallet {
 
     mapping(ManagementOption => ChangeProposal) public proposals;
 
-
     // Events
-    event TransferCreated(uint id, uint amount, address indexed to, address token);
+    event TransferCreated(
+        uint id,
+        uint amount,
+        address indexed to,
+        address token
+    );
     event TransferApproved(uint indexed id, address indexed approver);
-    event TransferSent(uint indexed id, uint amount, address indexed to, address token);
+    event TransferSent(
+        uint indexed id,
+        uint amount,
+        address indexed to,
+        address token
+    );
     event TransferCancelled(uint indexed id);
     event TransactionCreated(uint indexed id, address indexed to, bytes data);
     event TransactionApproved(uint indexed id, address indexed approver);
@@ -84,8 +88,6 @@ contract MultiSigWallet {
     event ChangeQuorumProposed(uint newQuorum);
     event ChangeQuorumApproved(uint newQuorum);
     event ProposalCancelled(ManagementOption indexed proposal);
-
-
 
     /// @notice Constructor to initialize the MultiSigWallet
     /// @param _approvers List of approvers
@@ -142,7 +144,9 @@ contract MultiSigWallet {
     /// @notice Get Transaction by index
     /// @param index transaction Index
     /// @return Transaction structs
-    function getTransaction(uint index) external view returns (Transaction memory) {
+    function getTransaction(
+        uint index
+    ) external view returns (Transaction memory) {
         return _transactions[index];
     }
 
@@ -158,7 +162,14 @@ contract MultiSigWallet {
         require(amount > 0, "Transfer amount must be greater than 0");
         require(to != address(0), "Invalid recipient address");
         require(token != address(0), "Invalid token address");
-        _transfers[_transferCount] = Transfer(_transferCount, amount, to, 0, false, token);
+        _transfers[_transferCount] = Transfer(
+            _transferCount,
+            amount,
+            to,
+            0,
+            false,
+            token
+        );
         emit TransferCreated(_transferCount, amount, to, token);
 
         _transferCount++;
@@ -246,7 +257,10 @@ contract MultiSigWallet {
     /// @notice Approve a transaction request
     /// @param id ID of the transaction to approve
     function approveTransaction(uint id) external onlyApprover {
-        require(id > 0 && id <= _transactionCount, "Transaction does not exist");
+        require(
+            id > 0 && id <= _transactionCount,
+            "Transaction does not exist"
+        );
         require(
             _transactions[id].executed == false,
             "Transaction already executed"
@@ -279,8 +293,14 @@ contract MultiSigWallet {
     /// @notice Cancel a pending transaction request
     /// @param id ID of the transaction to cancel
     function cancelTransaction(uint id) external onlyApprover {
-        require(id > 0 && id <= _transactionCount, "Transaction does not exist");
-        require(_transactions[id].executed == false, "Transaction already executed");
+        require(
+            id > 0 && id <= _transactionCount,
+            "Transaction does not exist"
+        );
+        require(
+            _transactions[id].executed == false,
+            "Transaction already executed"
+        );
 
         _transactions[id].executed = true; // Mark it as executed to prevent further approvals
         emit TransactionCancelled(id);
@@ -292,14 +312,22 @@ contract MultiSigWallet {
         require(_newApprover != address(0), "Invalid approver address");
         require(!isApprover[_newApprover], "Already an approver");
 
-        ChangeProposal storage proposal = proposals[ManagementOption.AddApprover];
-        require(!proposal.hasApproved[msg.sender], "Cannot approve proposal twice");
+        ChangeProposal storage proposal = proposals[
+            ManagementOption.AddApprover
+        ];
+        require(
+            !proposal.hasApproved[msg.sender],
+            "Cannot approve proposal twice"
+        );
 
         if (proposal.approver == address(0)) {
             proposal.approver = _newApprover;
             emit NewApproverProposed(_newApprover);
         } else {
-            require(proposal.approver == _newApprover, "Previous approver voting was not ended");
+            require(
+                proposal.approver == _newApprover,
+                "Previous approver voting was not ended"
+            );
         }
 
         proposal.approvals++;
@@ -311,6 +339,12 @@ contract MultiSigWallet {
             isApprover[_newApprover] = true;
             emit ApproverAdded(_newApprover);
 
+            // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
+            // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
+            // delete proposals[ManagementOption.RemoveApprover]; is called          
+            for (uint256 i = 0; i < proposal.approvals; i++) {
+                proposal.hasApproved[approvers[i]] = false;
+            }
             // clear variables for the next proposal changes
             delete proposals[ManagementOption.AddApprover];
         }
@@ -318,19 +352,29 @@ contract MultiSigWallet {
 
     /// @notice Propose to remove an existing approver
     /// @param _approverToRemove Address of the approver to remove
-    function proposeRemoveApprover(address _approverToRemove) external onlyApprover {
+    function proposeRemoveApprover(
+        address _approverToRemove
+    ) external onlyApprover {
         require(isApprover[_approverToRemove], "Not an approver");
         require(approvers.length - 1 >= quorum, "Approvers below quorum");
         require(_approverToRemove != msg.sender, "Cannot remove yourself");
 
-        ChangeProposal storage proposal = proposals[ManagementOption.RemoveApprover];
-        require(!proposal.hasApproved[msg.sender], "Cannot approve proposal twice");
+        ChangeProposal storage proposal = proposals[
+            ManagementOption.RemoveApprover
+        ];
+        require(
+            !proposal.hasApproved[msg.sender],
+            "Cannot approve proposal twice"
+        );
 
         if (proposal.approver == address(0)) {
             proposal.approver = _approverToRemove;
             emit RemoveApproverProposed(_approverToRemove);
         } else {
-            require(proposal.approver == _approverToRemove, "Previous approver voting was not ended");
+            require(
+                proposal.approver == _approverToRemove,
+                "Previous approver voting was not ended"
+            );
         }
 
         proposal.approvals++;
@@ -350,6 +394,13 @@ contract MultiSigWallet {
                 }
             }
 
+            // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
+            // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
+            // delete proposals[ManagementOption.RemoveApprover]; is called 
+            
+            for (uint256 i = 0; i < proposal.approvals; i++) {
+                proposal.hasApproved[approvers[i]] = false;
+            }
             // clear variables for the next proposal changes
             delete proposals[ManagementOption.RemoveApprover];
         }
@@ -358,16 +409,27 @@ contract MultiSigWallet {
     /// @notice Propose to change the quorum
     /// @param _newQuorum New quorum value to propose
     function proposeChangeQuorum(uint _newQuorum) external onlyApprover {
-        require(_newQuorum > 0 && _newQuorum <= approvers.length, "Invalid quorum value");
+        require(
+            _newQuorum > 0 && _newQuorum <= approvers.length,
+            "Invalid quorum value"
+        );
 
-        ChangeProposal storage proposal = proposals[ManagementOption.ChangeQuorum];
-        require(!proposal.hasApproved[msg.sender], "Cannot approve proposal twice");
+        ChangeProposal storage proposal = proposals[
+            ManagementOption.ChangeQuorum
+        ];
+        require(
+            !proposal.hasApproved[msg.sender],
+            "Cannot approve proposal twice"
+        );
 
         if (proposal.value == 0) {
             proposal.value = _newQuorum;
             emit ChangeQuorumProposed(_newQuorum);
         } else {
-            require(proposal.value == _newQuorum, "Previous quorum voting was not ended");
+            require(
+                proposal.value == _newQuorum,
+                "Previous quorum voting was not ended"
+            );
         }
 
         proposal.approvals++;
@@ -378,6 +440,12 @@ contract MultiSigWallet {
             quorum = _newQuorum;
             emit QuorumChanged(_newQuorum);
 
+            // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
+            // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
+            // delete proposals[ManagementOption.RemoveApprover]; is called 
+            for (uint256 i = 0; i < proposal.approvals; i++) {
+                proposal.hasApproved[approvers[i]] = false;
+            }
             // clear variables for the next proposal changes
             delete proposals[ManagementOption.ChangeQuorum];
         }
@@ -387,19 +455,16 @@ contract MultiSigWallet {
     /// @param _proposal proposal to canceled
     function cancelProposal(ManagementOption _proposal) external onlyApprover {
         require(
-            !(proposals[_proposal].approver == address(0) && proposals[_proposal].value == 0),
+            !(proposals[_proposal].approver == address(0) &&
+                proposals[_proposal].value == 0),
             "Proposal is not active"
         );
         delete proposals[_proposal];
         emit ProposalCancelled(_proposal);
     }
 
-
-
     // Fallback and receive functions to accept Ether
     receive() external payable {}
 
     fallback() external payable {}
-
-    
 }
