@@ -138,6 +138,7 @@ contract MultiSigWallet {
     /// @param index transfer Index
     /// @return Transfer structs
     function getTransfer(uint index) external view returns (Transfer memory) {
+        require(index > 0 && index < _transferCount, "Transfer does not exist");
         return _transfers[index];
     }
 
@@ -147,6 +148,10 @@ contract MultiSigWallet {
     function getTransaction(
         uint index
     ) external view returns (Transaction memory) {
+        require(
+            index > 0 && index < _transactionCount,
+            "Transaction does not exist"
+        );
         return _transactions[index];
     }
 
@@ -178,7 +183,7 @@ contract MultiSigWallet {
     /// @notice Approve a transfer request
     /// @param id ID of the transfer to approve
     function approveTransfer(uint id) external onlyApprover {
-        require(id > 0 && id <= _transferCount, "Transfer does not exist");
+        require(id > 0 && id < _transferCount, "Transfer does not exist");
         require(_transfers[id].sent == false, "Transfer already sent");
         require(
             _approvals[msg.sender][id] == false,
@@ -257,10 +262,7 @@ contract MultiSigWallet {
     /// @notice Approve a transaction request
     /// @param id ID of the transaction to approve
     function approveTransaction(uint id) external onlyApprover {
-        require(
-            id > 0 && id <= _transactionCount,
-            "Transaction does not exist"
-        );
+        require(id > 0 && id < _transactionCount, "Transaction does not exist");
         require(
             _transactions[id].executed == false,
             "Transaction already executed"
@@ -293,10 +295,7 @@ contract MultiSigWallet {
     /// @notice Cancel a pending transaction request
     /// @param id ID of the transaction to cancel
     function cancelTransaction(uint id) external onlyApprover {
-        require(
-            id > 0 && id <= _transactionCount,
-            "Transaction does not exist"
-        );
+        require(id > 0 && id < _transactionCount, "Transaction does not exist");
         require(
             _transactions[id].executed == false,
             "Transaction already executed"
@@ -341,7 +340,7 @@ contract MultiSigWallet {
 
             // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
             // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
-            // delete proposals[ManagementOption.RemoveApprover]; is called          
+            // delete proposals[ManagementOption.RemoveApprover]; is called
             for (uint256 i = 0; i < proposal.approvals; i++) {
                 proposal.hasApproved[approvers[i]] = false;
             }
@@ -396,8 +395,8 @@ contract MultiSigWallet {
 
             // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
             // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
-            // delete proposals[ManagementOption.RemoveApprover]; is called 
-            
+            // delete proposals[ManagementOption.RemoveApprover]; is called
+
             for (uint256 i = 0; i < proposal.approvals; i++) {
                 proposal.hasApproved[approvers[i]] = false;
             }
@@ -442,7 +441,7 @@ contract MultiSigWallet {
 
             // added this loop to set all proposal.hasApproved to false. because for some reason is always set when approval addresses that have made proposals before
             // trys to register another proposal fails the require(!proposal.hasApproved[msg.sender],"Cannot approve proposal twice") check.Even when
-            // delete proposals[ManagementOption.RemoveApprover]; is called 
+            // delete proposals[ManagementOption.RemoveApprover]; is called
             for (uint256 i = 0; i < proposal.approvals; i++) {
                 proposal.hasApproved[approvers[i]] = false;
             }
@@ -459,6 +458,9 @@ contract MultiSigWallet {
                 proposals[_proposal].value == 0),
             "Proposal is not active"
         );
+        for (uint256 i; i < proposals[_proposal].approvals; i++) {
+            delete proposals[_proposal].hasApproved[approvers[i]];
+        }
         delete proposals[_proposal];
         emit ProposalCancelled(_proposal);
     }
