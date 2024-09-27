@@ -21,12 +21,18 @@ describe("MultiSigWallet", () => {
     const ExternalContract = await ethers.getContractFactory(
       "ExternalContract"
     );
-    const Token = await ethers.getContractFactory(
-      "Token"
+    const Token = await ethers.getContractFactory("Token");
+    wallet = await MultiSigWallet.deploy(
+      [
+        await accounts[0].getAddress(),
+        await accounts[1].getAddress(),
+        await accounts[2].getAddress(),
+      ],
+      2,
+      "wallet"
     );
-    wallet = (await MultiSigWallet.deploy([await accounts[0].getAddress(), await accounts[1].getAddress(), await accounts[2].getAddress()], 2, 'wallet'))
     externalContract = (await ExternalContract.deploy()) as ExternalContract;
-    token = (await Token.deploy('Test Token', 'TK', 6, 2000)) as Token;
+    token = (await Token.deploy("Test Token", "TK", 6, 2000)) as Token;
     address = await wallet.getAddress();
     externalContractaddress = await externalContract.getAddress();
     await accounts[0].sendTransaction({
@@ -68,23 +74,27 @@ describe("MultiSigWallet", () => {
           await accounts[2].getAddress(),
           _NATIVE
         );
-      const transfers = await wallet.getTransfers();
+     
+      const transfer = await wallet.getTransfer(1);
 
-      expect(transfers.length).to.equal(1);
-      expect(transfers[0].id).to.equal(0);
-      expect(ethers.formatEther(transfers[0].amount)).to.equal("0.1");
-      expect(transfers[0].to).to.equal(await accounts[2].getAddress());
-      expect(transfers[0].approvals).to.equal(0);
-      expect(transfers[0].sent).to.be.false;
+  
+      expect(transfer.id).to.equal(1);
+      expect(ethers.formatEther(transfer.amount)).to.equal("0.1");
+      expect(transfer.to).to.equal(await accounts[2].getAddress());
+      expect(transfer.approvals).to.equal(0);
+      expect(transfer.sent).to.be.false;
     });
 
     it("should approve and send transfer if quorum reached", async () => {
-      await wallet.connect(accounts[0]).approveTransfer(0);
-      await wallet.connect(accounts[1]).approveTransfer(0);
+      
 
-      const transfers = await wallet.getTransfers();
+      await wallet.connect(accounts[0]).approveTransfer(1);
+      await wallet.connect(accounts[1]).approveTransfer(1);
 
-      expect(transfers[0].sent).to.be.true;
+      const transfer = await wallet.getTransfer(1);
+
+
+      expect(transfer.sent).to.be.true;
     });
 
     it("should not allow non-approver to create a transfer", async () => {
@@ -113,9 +123,9 @@ describe("MultiSigWallet", () => {
           await accounts[2].getAddress(),
           _NATIVE
         );
-      await wallet.connect(accounts[0]).approveTransfer(1);
+      await wallet.connect(accounts[0]).approveTransfer(2);
       await expect(
-        wallet.connect(accounts[0]).approveTransfer(1)
+        wallet.connect(accounts[0]).approveTransfer(2)
       ).to.be.revertedWith("Cannot approve transfer twice");
     });
 
@@ -127,11 +137,11 @@ describe("MultiSigWallet", () => {
           await accounts[2].getAddress(),
           _NATIVE
         );
-      await wallet.connect(accounts[0]).approveTransfer(2);
-      await wallet.connect(accounts[1]).approveTransfer(2);
+      await wallet.connect(accounts[0]).approveTransfer(3);
+      await wallet.connect(accounts[1]).approveTransfer(3);
 
       await expect(
-        wallet.connect(accounts[2]).approveTransfer(2)
+        wallet.connect(accounts[2]).approveTransfer(3)
       ).to.be.revertedWith("Transfer already sent");
     });
   });
@@ -153,9 +163,7 @@ describe("MultiSigWallet", () => {
 
     it("should approve and execute transaction if quorum reached", async () => {
       const data = wallet.interface.encodeFunctionData("name");
-      await wallet
-        .connect(accounts[1])
-        .createTransaction(address, data);
+      await wallet.connect(accounts[1]).createTransaction(address, data);
       await wallet.connect(accounts[2]).approveTransaction(2);
 
       const transaction = await wallet.getTransaction(2);
@@ -199,27 +207,27 @@ describe("MultiSigWallet", () => {
       ).to.be.revertedWith("Transaction already executed");
     });
     it("should expect correct result when excuting externat contract functions", async () => {
-        const withdrawalAdress = await accounts[0].getAddress();
-        const amounttoSend = ethers.parseEther("1");
-        const balanceOfAccount1Before = await ethers.provider.getBalance(
-          withdrawalAdress
-        );
-        const data = externalContract.interface.encodeFunctionData("withdraw", [
-          withdrawalAdress,
-          amounttoSend,
-        ]);
-        await wallet
-          .connect(accounts[1])
-          .createTransaction(externalContractaddress, data);
-        await wallet.connect(accounts[2]).approveTransaction(5);
-  
-        const balanceOfAccount1After = await ethers.provider.getBalance(
-          withdrawalAdress
-        );
-  
-        expect(balanceOfAccount1Before + amounttoSend).equal(
-          balanceOfAccount1After
-        );
-      });
+      const withdrawalAdress = await accounts[0].getAddress();
+      const amounttoSend = ethers.parseEther("1");
+      const balanceOfAccount1Before = await ethers.provider.getBalance(
+        withdrawalAdress
+      );
+      const data = externalContract.interface.encodeFunctionData("withdraw", [
+        withdrawalAdress,
+        amounttoSend,
+      ]);
+      await wallet
+        .connect(accounts[1])
+        .createTransaction(externalContractaddress, data);
+      await wallet.connect(accounts[2]).approveTransaction(5);
+
+      const balanceOfAccount1After = await ethers.provider.getBalance(
+        withdrawalAdress
+      );
+
+      expect(balanceOfAccount1Before + amounttoSend).equal(
+        balanceOfAccount1After
+      );
+    });
   });
 });
