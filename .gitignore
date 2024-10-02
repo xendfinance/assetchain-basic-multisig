@@ -7,3 +7,4 @@ contracts/cache
 contracts/typechain-types
 *yarn.lock
 node_modules/
+contracts/ignition/deployments/

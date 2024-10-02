@@ -40,8 +40,8 @@ const config: HardhatUserConfig = {
       url: "https://enugu-rpc.assetchain.org",
       accounts: [PRIVATE_KEY_1!],
     },
-    rinkeby: {
-      url: "https://eth-rinkeby.alchemyapi.io/v2/123abc123abc123abc123abc123abcde",
+    assetchain_mainnet: {
+      url: "https://mainnet-rpc.assetchain.org",
       accounts: [PRIVATE_KEY_1!],
     },
   },

@@ -22,6 +22,9 @@
     "deploy:sepolia": "npx hardhat run --network sepolia scripts/multiSigWalletFactoryDeploy.ts",
     "deploy:sample:localhost": "npx hardhat run --network localhost scripts/externalContractDeploy.ts",
     "deploy:sample:assetchain_test": "npx hardhat run --network assetchain_test scripts/externalContractDeploy.ts",
-    "deploy:sample:sepolia": "npx hardhat run --network sepolia scripts/externalContractDeploy.ts"
+    "deploy:sample:sepolia": "npx hardhat run --network sepolia scripts/externalContractDeploy.ts",
+    "deploy:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/multiSigWalletFactoryDeploy.ts",
+    "deploy:multisig:assetchain_test": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network assetchain_test",
+    "deploy:multisig:assetchain_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network assetchain_test"
   }
 }
