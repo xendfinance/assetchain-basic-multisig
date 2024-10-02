@@ -2,12 +2,21 @@ import { expect } from "chai";
 import hre from "hardhat";
 const ethers = hre.ethers;
 import { Contract, Signer } from "ethers";
-import { MultiSigWallet } from "../typechain-types/MultiSigWallet";
-import { ExternalContract } from "../typechain-types";
+import { MultiSigWallet } from "../typechain-types/contracts/MultiSigWallet";
+import { ExternalContract, Token } from "../typechain-types/contracts/mock";
+
+const _NATIVE = `0x0000000000000000000000000000000000000001`;
+
+enum ManagementOption {
+  AddApprover,
+  RemoveApprover,
+  ChangeQuorum,
+}
 
 describe("MultiSigWallet", () => {
   let wallet: MultiSigWallet;
   let externalContract: ExternalContract;
+  let token: Token;
   let address: string;
   let externalContractaddress: string;
   let accounts: Signer[];
@@ -18,16 +27,18 @@ describe("MultiSigWallet", () => {
     const ExternalContract = await ethers.getContractFactory(
       "ExternalContract"
     );
-    wallet = (await MultiSigWallet.deploy(
+    const Token = await ethers.getContractFactory("Token");
+    wallet = await MultiSigWallet.deploy(
       [
         await accounts[0].getAddress(),
         await accounts[1].getAddress(),
         await accounts[2].getAddress(),
       ],
       2,
-      "MyWallet"
-    )) as MultiSigWallet;
+      "wallet"
+    );
     externalContract = (await ExternalContract.deploy()) as ExternalContract;
+    token = (await Token.deploy("Test Token", "TK", 6, 2000)) as Token;
     address = await wallet.getAddress();
     externalContractaddress = await externalContract.getAddress();
     await accounts[0].sendTransaction({
@@ -51,7 +62,7 @@ describe("MultiSigWallet", () => {
       expect(approvers[1]).to.equal(await accounts[1].getAddress());
       expect(approvers[2]).to.equal(await accounts[2].getAddress());
       expect(quorum).to.equal(2);
-      expect(name).to.equal("MyWallet");
+      expect(name).to.equal("wallet");
     });
 
     it("should receive funds", async () => {
@@ -60,31 +71,32 @@ describe("MultiSigWallet", () => {
     });
   });
 
-  describe("Transfers", () => {
+  describe("Transfers (Native)", () => {
     it("should create a transfer", async () => {
       await wallet
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
-      const transfers = await wallet.getTransfers();
 
-      expect(transfers.length).to.equal(1);
-      expect(transfers[0].id).to.equal(0);
-      expect(ethers.formatEther(transfers[0].amount)).to.equal("0.1");
-      expect(transfers[0].to).to.equal(await accounts[2].getAddress());
-      expect(transfers[0].approvals).to.equal(0);
-      expect(transfers[0].sent).to.be.false;
+      const transfer = await wallet.getTransfer(1);
+
+      expect(transfer.id).to.equal(1);
+      expect(ethers.formatEther(transfer.amount)).to.equal("0.1");
+      expect(transfer.to).to.equal(await accounts[2].getAddress());
+      expect(transfer.approvals).to.equal(0);
+      expect(transfer.sent).to.be.false;
     });
 
     it("should approve and send transfer if quorum reached", async () => {
-      await wallet.connect(accounts[0]).approveTransfer(0);
-      await wallet.connect(accounts[1]).approveTransfer(0);
+      await wallet.connect(accounts[0]).approveTransfer(1);
+      await wallet.connect(accounts[1]).approveTransfer(1);
 
-      const transfers = await wallet.getTransfers();
+      const transfer = await wallet.getTransfer(1);
 
-      expect(transfers[0].sent).to.be.true;
+      expect(transfer.sent).to.be.true;
     });
 
     it("should not allow non-approver to create a transfer", async () => {
@@ -93,15 +105,16 @@ describe("MultiSigWallet", () => {
           .connect(accounts[3])
           .createTransfer(
             ethers.parseEther("0.1"),
-            await accounts[2].getAddress()
+            await accounts[2].getAddress(),
+            _NATIVE
           )
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not allow non-approver to approve a transfer", async () => {
       await expect(
         wallet.connect(accounts[3]).approveTransfer(0)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not approve transfer twice by the same approver", async () => {
@@ -109,12 +122,13 @@ describe("MultiSigWallet", () => {
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
-      await wallet.connect(accounts[0]).approveTransfer(1);
+      await wallet.connect(accounts[0]).approveTransfer(2);
       await expect(
-        wallet.connect(accounts[0]).approveTransfer(1)
-      ).to.be.revertedWith("cannot approve transfer twice");
+        wallet.connect(accounts[0]).approveTransfer(2)
+      ).to.be.revertedWith("Cannot approve transfer twice");
     });
 
     it("should not approve a transfer that has already been sent", async () => {
@@ -122,14 +136,32 @@ describe("MultiSigWallet", () => {
         .connect(accounts[0])
         .createTransfer(
           ethers.parseEther("0.1"),
-          await accounts[2].getAddress()
+          await accounts[2].getAddress(),
+          _NATIVE
         );
-      await wallet.connect(accounts[0]).approveTransfer(2);
-      await wallet.connect(accounts[1]).approveTransfer(2);
+      await wallet.connect(accounts[0]).approveTransfer(3);
+      await wallet.connect(accounts[1]).approveTransfer(3);
 
       await expect(
-        wallet.connect(accounts[2]).approveTransfer(2)
-      ).to.be.revertedWith("Transfer has already been sent");
+        wallet.connect(accounts[2]).approveTransfer(3)
+      ).to.be.revertedWith("Transfer already sent");
+    });
+    it("should cancel a transaction if it exists and has not been sent", async () => {
+      await wallet
+        .connect(accounts[0])
+        .createTransfer(
+          ethers.parseEther("0.1"),
+          await accounts[2].getAddress(),
+          _NATIVE
+        );
+      await wallet.connect(accounts[0]).cancelTransfer(4);
+      const transfer = await wallet.getTransfer(4);
+      expect(transfer.sent).to.be.true;
+    });
+    it("should revert if trying to cancel a non-existent transfer", async () => {
+      await expect(
+        wallet.connect(accounts[0]).cancelTransaction(999)
+      ).to.be.revertedWith("Transaction does not exist");
     });
   });
 
@@ -150,9 +182,7 @@ describe("MultiSigWallet", () => {
 
     it("should approve and execute transaction if quorum reached", async () => {
       const data = wallet.interface.encodeFunctionData("name");
-      await wallet
-        .connect(accounts[1])
-        .createTransaction(address, data);
+      await wallet.connect(accounts[1]).createTransaction(address, data);
       await wallet.connect(accounts[2]).approveTransaction(2);
 
       const transaction = await wallet.getTransaction(2);
@@ -165,13 +195,13 @@ describe("MultiSigWallet", () => {
         wallet
           .connect(accounts[3])
           .createTransaction(await accounts[1].getAddress(), data)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not allow non-approver to approve a transaction", async () => {
       await expect(
         wallet.connect(accounts[3]).approveTransaction(1)
-      ).to.be.revertedWith("only approver allowed");
+      ).to.be.revertedWith("Only approver allowed");
     });
 
     it("should not approve transaction twice by the same approver", async () => {
@@ -193,30 +223,156 @@ describe("MultiSigWallet", () => {
 
       await expect(
         wallet.connect(accounts[2]).approveTransaction(4)
-      ).to.be.revertedWith("Transaction has already been executed");
+      ).to.be.revertedWith("Transaction already executed");
     });
     it("should expect correct result when excuting externat contract functions", async () => {
-        const withdrawalAdress = await accounts[0].getAddress();
-        const amounttoSend = ethers.parseEther("1");
-        const balanceOfAccount1Before = await ethers.provider.getBalance(
-          withdrawalAdress
-        );
-        const data = externalContract.interface.encodeFunctionData("withdraw", [
-          withdrawalAdress,
-          amounttoSend,
-        ]);
-        await wallet
-          .connect(accounts[1])
-          .createTransaction(externalContractaddress, data);
-        await wallet.connect(accounts[2]).approveTransaction(5);
-  
-        const balanceOfAccount1After = await ethers.provider.getBalance(
-          withdrawalAdress
-        );
-  
-        expect(balanceOfAccount1Before + amounttoSend).equal(
-          balanceOfAccount1After
-        );
-      });
+      const withdrawalAdress = await accounts[0].getAddress();
+      const amounttoSend = ethers.parseEther("1");
+      const balanceOfAccount1Before = await ethers.provider.getBalance(
+        withdrawalAdress
+      );
+      const data = externalContract.interface.encodeFunctionData("withdraw", [
+        withdrawalAdress,
+        amounttoSend,
+      ]);
+      await wallet
+        .connect(accounts[1])
+        .createTransaction(externalContractaddress, data);
+      await wallet.connect(accounts[2]).approveTransaction(5);
+
+      const balanceOfAccount1After = await ethers.provider.getBalance(
+        withdrawalAdress
+      );
+
+      expect(balanceOfAccount1Before + amounttoSend).equal(
+        balanceOfAccount1After
+      );
+    });
+
+    it("should cancel a transaction if it exists and has not been executed", async () => {
+      const withdrawalAdress = await accounts[0].getAddress();
+      const amounttoSend = ethers.parseEther("1");
+
+      const data = externalContract.interface.encodeFunctionData("withdraw", [
+        withdrawalAdress,
+        amounttoSend,
+      ]);
+      await wallet
+        .connect(accounts[1])
+        .createTransaction(externalContractaddress, data);
+      await wallet.connect(accounts[2]).cancelTransaction(6);
+
+      const transaction = await wallet.getTransaction(6);
+
+      expect(transaction.executed).to.be.true;
+    });
+
+    it("should revert if trying to cancel a non-existent transaction", async () => {
+      await expect(
+        wallet.connect(accounts[0]).cancelTransaction(999)
+      ).to.be.revertedWith("Transaction does not exist");
+    });
+  });
+
+  describe("Propose Add Approver", () => {
+    it("should propose a new approver", async () => {
+      await wallet
+        .connect(accounts[0])
+        .proposeAddApprover(await accounts[3].getAddress());
+      const proposal = await wallet.proposals(ManagementOption.AddApprover);
+      expect(proposal.approver).to.equal(await accounts[3].getAddress());
+    });
+
+    it("should revert if proposing an already existing approver", async () => {
+      await expect(
+        wallet
+          .connect(accounts[0])
+          .proposeAddApprover(await accounts[1].getAddress())
+      ).to.be.revertedWith("Already an approver");
+    });
+
+    it("should revert if proposing a zero address", async () => {
+      await expect(
+        wallet.connect(accounts[0]).proposeAddApprover(ethers.ZeroAddress)
+      ).to.be.revertedWith("Invalid approver address");
+    });
+
+    it("should approve new approver", async () => {
+      await wallet
+        .connect(accounts[1])
+        .proposeAddApprover(await accounts[3].getAddress());
+      const isApprover = await wallet.isApprover(
+        await accounts[3].getAddress()
+      );
+
+      expect(isApprover).to.be.true;
+    });
+  });
+
+  describe("Propose Remove Approver", () => {
+    it("should propose to prpose removin an existing approver", async () => {
+      await wallet.connect(accounts[0]).proposeRemoveApprover(accounts[2]);
+      const proposal = await wallet.proposals(ManagementOption.RemoveApprover);
+      expect(proposal.approver).to.equal(accounts[2]);
+    });
+
+    it("should remove an existing approver", async () => {
+      await wallet.connect(accounts[1]).proposeRemoveApprover(accounts[2]);
+      const proposal = await wallet.proposals(ManagementOption.RemoveApprover);
+
+      const isApprover = await wallet.isApprover(accounts[2])
+      expect(proposal.approver).to.equal(ethers.ZeroAddress);
+      expect(isApprover).to.be.false;
+    });
+
+    it("should revert if trying to remove a non-approver", async () => {
+      await expect(
+        wallet
+          .connect(accounts[0])
+          .proposeRemoveApprover(await accounts[4].getAddress())
+      ).to.be.revertedWith("Not an approver");
+    });
+
+    it("should revert if trying to remove yourself", async () => {
+      await expect(
+        wallet
+          .connect(accounts[0])
+          .proposeRemoveApprover(await accounts[0].getAddress())
+      ).to.be.revertedWith("Cannot remove yourself");
+    });
+  });
+  describe("Propose Change Quorum", () => {
+    it("should propose a new quorum", async () => {
+      await wallet.connect(accounts[0]).proposeChangeQuorum(3);
+      const proposal = await wallet.proposals(ManagementOption.ChangeQuorum);
+      expect(proposal.value).to.equal(3);
+    });
+
+    it("should revert if proposing an invalid quorum", async () => {
+      await expect(
+        wallet.connect(accounts[0]).proposeChangeQuorum(0)
+      ).to.be.revertedWith("Invalid quorum value");
+    });
+  });
+  describe("cancelProposal", function () {
+    it("should cancel an active proposal", async function () {
+      // Propose a change (e.g., adding an approver)
+      await wallet.connect(accounts[0]).proposeAddApprover(accounts[4]); // Replace with a valid address
+
+      // Cancel the proposal
+      await wallet
+        .connect(accounts[1])
+        .cancelProposal(ManagementOption.AddApprover);
+
+      // Check that the proposal is canceled
+      const proposal = await wallet.proposals(ManagementOption.AddApprover);
+      expect(proposal.approver).to.equal(ethers.ZeroAddress);
+    });
+
+    it("should revert if no active proposal exists", async function () {
+      await expect(
+        wallet.cancelProposal(ManagementOption.AddApprover)
+      ).to.be.revertedWith("Proposal is not active");
+    });
   });
 });
