@@ -44,6 +44,26 @@ const config: HardhatUserConfig = {
       url: "https://mainnet-rpc.assetchain.org",
       accounts: [PRIVATE_KEY_1!],
     },
+    arbitrum_mainnet: {
+      url: "https://arb1.arbitrum.io/rpc",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    bsc_mainnet: {
+      url: "https://binance.llamarpc.com",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    base_mainnet: {
+      url: "https://mainnet.base.org",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    bitlayer_mainnet: {
+      url: "https://rpc.bitlayer.org",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    ethereum_mainnet: {
+      url: "https://ethereum-rpc.publicnode.com",
+      accounts: [PRIVATE_KEY_1!],
+    },
   },
   etherscan: {
     apiKey: {
