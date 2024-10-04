@@ -1,11 +1,15 @@
 import hre from 'hardhat'
+import {config} from 'dotenv'
 
-const approvals = ["0x4E5f57313e2a8be74115e0Dd4bAbdD6E45d266f7", "0x31f2b36E6a086De69B88F2a0D4444AaDF52038Fc"];
+config()
+
+const approvals = [process.env.APPROVAL1!, process.env.APPROVAL2!, process.env.APPROVAL3!];
 const name = "Wallet";
 const quorem = 2;
 
 async function main() {
-
+    const config = hre.network.config
+    console.log(`Deploying...`)
     const MultiSigWallet = await hre.ethers.getContractFactory("MultiSigWallet");
     const multiSigWallet= await MultiSigWallet.deploy(approvals, quorem, name);
     

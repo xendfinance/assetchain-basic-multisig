@@ -24,13 +24,12 @@
     "deploy:sample:assetchain_test": "npx hardhat run --network assetchain_test scripts/externalContractDeploy.ts",
     "deploy:sample:sepolia": "npx hardhat run --network sepolia scripts/externalContractDeploy.ts",
     "deploy:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/multiSigWalletFactoryDeploy.ts",
-    "deploy:multisig:assetchain_test": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network assetchain_test",
-    "deploy:multisig:assetchain_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network assetchain_mainnet",
-    "deploy:multisig:arbitrum_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network arbitrum_mainnet",
-    "deploy:multisig:bsc_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network bsc_mainnet",
-    "deploy:multisig:base_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network base_mainnet",
-    "deploy:multisig:bitlayer_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network bitlayer_mainnet",
-    "deploy:multisig:ethereum_mainnet": "npx hardhat ignition deploy ignition/modules/MultisigWallet.ts --network ethereum_mainnet"
-
+    "deploy:multisig:assetchain_test": "npx hardhat run --network assetchain_test scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:arbitrum_mainnet": "npx hardhat run --network arbitrum_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:bsc_mainnet": "npx hardhat run --network bsc_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:base_mainnet": "npx hardhat run --network base_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:bitlayer_mainnet": "npx hardhat run --network bitlayer_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:ethereum_mainnet": "npx hardhat run --network ethereum_mainnet scripts/multisigWallet.deploy.ts"
   }
 }

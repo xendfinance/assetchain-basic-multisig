@@ -1,8 +1,13 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
+import {config} from 'dotenv'
 
-const approvals = ["0xA5d439D40AB03bB908102ca99aeC9f1eF74bb1b5", "0xA81733D57f62dc268137b4c31ad9C803BF2F18Cf"];
+config()
+
+const approvals = [process.env.APPROVAL1!, process.env.APPROVAL2!, process.env.APPROVAL3!];
 const name = "Wallet";
 const quorem = 2;
+
+console.log(approvals)
 
 const MultiSigWalletModule = buildModule("MultiSigWalletModule", (m) => {
   const multiSigWallet = m.contract("MultiSigWallet", [
