@@ -59,6 +59,11 @@ const SideBar = () => {
               <Link to={`/`}>
                 <h4 className="text-sm font-bold my-2">Home {">>"}</h4>
               </Link>
+              <Link to={`/wallet/assets/${walletAddress}`}>
+                <h4 className="text-sm font-bold my-2">
+                  Assets {">>"}
+                </h4>
+              </Link>
               <Link to={`/wallet/transfers/${walletAddress}`}>
                 <h4 className="text-sm font-bold my-2">
                   Transfer Funds {">>"}

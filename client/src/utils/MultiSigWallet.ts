@@ -2,7 +2,8 @@ import { parseEther } from "ethers";
 import MultiSigWalletAbi from "../abi/MultiSigWallet.json";
 import { showToast } from "./toaster";
 import { Transaction } from "./type";
-const MULTISIG_CONTRACT_ADDRESS = "0x9D1e369d68Bc381Ee8104CB8A7cE333583992695";
+// const MULTISIG_CONTRACT_ADDRESS = "0x9D1e369d68Bc381Ee8104CB8A7cE333583992695";
+export const MULTISIG_CONTRACT_ADDRESS=import.meta.env.VITE_MULTISIG_ADDRESS
 
 class MultiSigWallet {
   contract;
@@ -24,8 +25,22 @@ class MultiSigWallet {
     return await this.contract.methods.getApprovers().call();
   }
 
-  async getTransfers(): Promise<any[]> {
-    return await this.contract.methods.getTransfers().call();
+  // async getTransfers(): Promise<any[]> {
+  //   return await this.contract.methods.getTransfers().call();
+  // }
+
+  async getTransfers(){
+    const transferCount = await this.contract.methods
+      .transferCount()
+      .call();
+    const transfers : any[] = [];
+    for (let i = 1; i < transferCount; i++) {
+      const transfer = await this.contract.methods.getTransfer(i).call();
+      if (transfer && transfer.id) {
+        transfers.push(transfer);
+      }
+    }
+    return transfers;
   }
 
   async getTransactions(): Promise<Transaction[]> {
@@ -47,16 +62,25 @@ class MultiSigWallet {
     amount: any,
     to: any,
     walletAddress: string,
-    fromAddress: string
+    fromAddress: string,
+    token: string
   ) {
     try {
       let action = await this.contract.methods.createTransfer(
         parseEther(amount),
-        to
+        to,
+        token
       );
       let gas = Math.floor(
         (await action.estimateGas({ from: fromAddress })) * 1.4
       );
+
+      // let txn = await this._sendTransaction(
+      //   action,
+      //   gas,
+      //   walletAddress,
+      //   fromAddress
+      // );
 
       let txn = await this._sendTransaction(
         action,
@@ -84,6 +108,13 @@ class MultiSigWallet {
         (await action.estimateGas({ from: fromAddress })) * 1.4
       );
 
+      // let txn = await this._sendTransaction(
+      //   action,
+      //   gas,
+      //   walletAddress,
+      //   fromAddress
+      // );
+
       let txn = await this._sendTransaction(
         action,
         gas,
@@ -105,6 +136,12 @@ class MultiSigWallet {
         (await action.estimateGas({ from: fromAddress })) * 1.4
       );
 
+      // let txn = await this._sendTransaction(
+      //   action,
+      //   gas,
+      //   walletAddress,
+      //   fromAddress
+      // );
       let txn = await this._sendTransaction(
         action,
         gas,
@@ -125,6 +162,13 @@ class MultiSigWallet {
       let gas = Math.floor(
         (await action.estimateGas({ from: fromAddress })) * 1.4
       );
+
+      // let txn = await this._sendTransaction(
+      //   action,
+      //   gas,
+      //   walletAddress,
+      //   fromAddress
+      // );
 
       let txn = await this._sendTransaction(
         action,
@@ -152,3 +196,6 @@ class MultiSigWallet {
 }
 
 export default MultiSigWallet;
+
+export function getMultiSig(provider: any, address: string) { return new MultiSigWallet(provider, address)}
+
