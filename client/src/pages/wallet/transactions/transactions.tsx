@@ -198,9 +198,9 @@ export function WalletTransactions() {
         let value = formState.inputValues[inp.name];
 
         if (value) {
-          // if (inp.type === "number") {
-          //   value = ethers.parseEther(value.toString());
-          // }
+          if (inp.type === "array") {
+            value = JSON.parse(value)
+          }
           inputs.push(value);
         }
       }
