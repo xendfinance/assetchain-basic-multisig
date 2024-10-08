@@ -101,7 +101,7 @@ export const SAMPLEABI = `[
     }
   ]`;
 
-export const defaultChain = 42421
+export const defaultChain = 42420
 
 export const networks = [
   { rpc: "https://mainnet-rpc.assetchain.org", chainId: 42420, explorer: 'https://scan.assetchain.org', name: "Asset Chain" },
