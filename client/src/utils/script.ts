@@ -1,6 +1,6 @@
 import Web3 from "web3";
 import { BigNumber } from "@ethersproject/bignumber";
-import { executedChainId } from "./constants";
+import { defaultChain, networks } from "./constants";
 
 declare global {
   interface Window {
@@ -10,14 +10,13 @@ declare global {
 }
 
 const SWAP_ROUTER_ADDRESS_BSC = "0xe41f0FF3f4d90Bb1c4e32714532e064F9eA95F19";
-const ASSET_CHAIN_TEST_CHAIN_ID = executedChainId;
 const ASSET_CHAIN_TEST_CHAIN_RPC = "https://enugu-rpc.assetchain.org";
 const ASSET_CHAIN_TEST_CHAIN_EXPLORER = "https://scan-testnet.assetchain.org";
 
 const { ethereum } = window;
 
 export async function connectToBrowserProvider(
-  chainId = ASSET_CHAIN_TEST_CHAIN_ID
+  chainId = defaultChain
 ): Promise<string | undefined> {
   if (ethereum) {
     let address: string;
@@ -120,22 +119,32 @@ const getNetworkName = (chainId: any) => {
 };
 
 export async function addChain(
-  chainId = ASSET_CHAIN_TEST_CHAIN_ID
+  chainId: number
 ): Promise<string[]> {
   try {
+    let rpc = ASSET_CHAIN_TEST_CHAIN_RPC
+    let explorer = ASSET_CHAIN_TEST_CHAIN_EXPLORER
+    let name = 'Asset Chain Testnet'
+    let network = networks.find(n => n.chainId === chainId)
+    
+    if (network) {
+      rpc = network.rpc
+      explorer = network.explorer
+      name = network.name
+    }
     await ethereum.request({
       method: "wallet_addEthereumChain",
       params: [
         {
           chainId: Web3.utils.toHex(chainId),
-          chainName: "Asset Chain Testnet",
+          chainName: name,
           nativeCurrency: {
             name: "RWA",
             symbol: "RWA",
             decimals: 18,
           },
-          rpcUrls: [ASSET_CHAIN_TEST_CHAIN_RPC],
-          blockExplorerUrls: [ASSET_CHAIN_TEST_CHAIN_EXPLORER],
+          rpcUrls: [rpc],
+          blockExplorerUrls: [explorer],
         },
       ],
     });
@@ -146,7 +155,7 @@ export async function addChain(
   }
 }
 
-export async function switchToRightNetwork(chainId = executedChainId) :Promise<string[]>  {
+export async function switchToRightNetwork(chainId = defaultChain) :Promise<string[]>  {
   try {
     await ethereum.request({
       method: "wallet_switchEthereumChain",
@@ -155,17 +164,17 @@ export async function switchToRightNetwork(chainId = executedChainId) :Promise<s
     const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     return accounts;
   } catch (error) {
-    return await addChain();
+    return await addChain(chainId);
   }
 }
 
-export async function autoConnectWallet() {
+export async function autoConnectWallet(chainId = defaultChain) {
   const connectedAccount = localStorage.getItem("connectedAccount");
 
   if (connectedAccount) {
 
     // Attempt to connect the wallet and switch chain
-    return await connectToBrowserProvider();
+    return await connectToBrowserProvider(chainId);
   }
 }
 // export async function swap(destinationToken, sourceToken, sourceAmount, address) {

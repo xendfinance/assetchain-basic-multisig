@@ -101,7 +101,12 @@ export const SAMPLEABI = `[
     }
   ]`;
 
-export const executedChainId = 42421;
+export const defaultChain = 42421
+
+export const networks = [
+  { rpc: "https://mainnet-rpc.assetchain.org", chainId: 42420, explorer: 'https://scan.assetchain.org', name: "Asset Chain" },
+  { rpc: "https://enugu-rpc.assetchain.org", chainId: 42421, explorer: 'https://scan-testnet.assetchain.org', name: 'Asset Chain Testnet' },
+];
 
 export const numReg = new RegExp("[0-9]");
 

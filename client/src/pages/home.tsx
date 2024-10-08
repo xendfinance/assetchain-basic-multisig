@@ -54,25 +54,25 @@ export function Home() {
     if (!account.provider) return;
     try {
       setUiState({ ...uiState, loadingData: true });
-      // const wallets = await MultiSigWalletFactory.getApprovalsWallet(
-      //   account.address,
-      //   account.provider,
-      // );
-      const wallet = await getWalletDetails(MULTISIG_CONTRACT_ADDRESS);
+      const wallets = await MultiSigWalletFactory.getApprovalsWallet(
+        account.address,
+        account.provider
+      );
+      // const wallet = await getWalletDetails(MULTISIG_CONTRACT_ADDRESS);
 
-      const _walletDetails: WalletDetails[] = [wallet];
-      // for (let wallet of wallets) {
-      //   try {
-      //     const detail = await getWalletDetails(wallet);
-      //     const exist = _walletDetails.find(
-      //       (w) => w.address === detail.address,
-      //     );
-      //     if (exist) continue;
-      //     _walletDetails.push(detail);
-      //   } catch (error) {
-      //     throw error;
-      //   }
-      // }
+      const _walletDetails: WalletDetails[] = [];
+      for (let wallet of wallets) {
+        try {
+          const detail = await getWalletDetails(wallet);
+          const exist = _walletDetails.find(
+            (w) => w.address === detail.address
+          );
+          if (exist) continue;
+          _walletDetails.push(detail);
+        } catch (error) {
+          throw error;
+        }
+      }
       setUiState({ ...uiState, loadingData: false });
       setWalletDetails([..._walletDetails]);
     } catch (error) {
@@ -245,14 +245,16 @@ export function Home() {
         </Modal>
         {account ? (
           <div className="flex flex-col w-full">
-            {/*<div className="flex flex-row-reverse px-5 w-full my-3">
-              <button
-                onClick={manageModal}
-                className="float-right text-nowrap rounded-lg mt-6 px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
-              >
-                Create Wallet
-              </button>
-        </div>*/}
+            {account && account.address && (
+              <div className="flex flex-row-reverse px-5 w-full my-3">
+                <button
+                  onClick={manageModal}
+                  className="float-right text-nowrap rounded-lg mt-6 px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
+                >
+                  Create Wallet
+                </button>
+              </div>
+            )}
             {uiState.loadingData ? (
               <Loader />
             ) : (

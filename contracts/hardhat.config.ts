@@ -1,5 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import 'hardhat-gas-reporter'
+import 'hardhat-contract-sizer'
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -9,25 +11,37 @@ const PRIVATE_KEY_1 = process.env.PRIVATE_KEY;
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
-      // {
-      //   version: "0.8.7",
-      // },
+      {
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
       {
         version: "0.8.24",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
       {
         version: "0.8.0",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
       // {
       //   version: "0.6.12",
       // },
-    ],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
+    ]
   },
   networks: {
     hardhat: {},
@@ -82,6 +96,15 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
   },
 };
 

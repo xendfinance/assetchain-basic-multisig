@@ -3,8 +3,7 @@ import web3 from 'web3'
 
 import { ethers } from "ethers";
 
-const multiSigWalletFactoryAddress =
-  "0xb37DcfF1576Ae516992D4BB17dF694E3df258e17";
+const multiSigWalletFactoryAddress = import.meta.env.VITE_MULTI_SIG_WALLET_FACTORY_ADDRESS;
 
 
 export class MultiSigWalletFactory {

@@ -303,7 +303,7 @@ export function WalletTransactions() {
                       scope="row"
                       className="whitespace-nowrap px-6 py-4 font-medium"
                     >
-                      {Number(e.id) + 1}
+                      {i + 1}
                     </td>
                     <td className="px-6 py-4">{e.to}</td>
                     <td className="px-6 py-4">{e.approvals}</td>
