@@ -3,7 +3,10 @@ import { useAccount } from "../context/UserContext";
 import { Layout } from "../components/Layout";
 import { ethers } from "ethers";
 import { MultiSigWalletFactory } from "../utils/MultiSigWalletFactory";
-import MultiSigWallet from "../utils/MultiSigWallet";
+import MultiSigWallet, {
+  MULTISIG_CONTRACT_ADDRESS,
+  getMultiSig,
+} from "../utils/MultiSigWallet";
 import { WalletDetails } from "../utils/type";
 import { Modal } from "../components/Modal";
 import { showToast } from "../utils/toaster";
@@ -53,15 +56,16 @@ export function Home() {
       setUiState({ ...uiState, loadingData: true });
       const wallets = await MultiSigWalletFactory.getApprovalsWallet(
         account.address,
-        account.provider,
+        account.provider
       );
+      // const wallet = await getWalletDetails(MULTISIG_CONTRACT_ADDRESS);
 
       const _walletDetails: WalletDetails[] = [];
       for (let wallet of wallets) {
         try {
           const detail = await getWalletDetails(wallet);
           const exist = _walletDetails.find(
-            (w) => w.address === detail.address,
+            (w) => w.address === detail.address
           );
           if (exist) continue;
           _walletDetails.push(detail);
@@ -118,7 +122,7 @@ export function Home() {
         formState.quorem,
         formState.name,
         account.provider,
-        account.address,
+        account.address
       );
       showToast("Wallet Created!", "success");
       setUiState({ ...uiState, loading: false, showModal: false });
@@ -131,7 +135,8 @@ export function Home() {
 
   async function getWalletDetails(address: string) {
     try {
-      const instance = new MultiSigWallet(account?.provider, address);
+      // const instance = new MultiSigWallet(account?.provider, address);
+      const instance = getMultiSig(account?.provider, address);
 
       const promise = Promise.all([
         instance.getName(),
@@ -240,14 +245,16 @@ export function Home() {
         </Modal>
         {account ? (
           <div className="flex flex-col w-full">
-            <div className="flex flex-row-reverse px-5 w-full my-3">
-              <button
-                onClick={manageModal}
-                className="float-right text-nowrap rounded-lg mt-6 px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
-              >
-                Create Wallet
-              </button>
-            </div>
+            {account && account.address && (
+              <div className="flex flex-row-reverse px-5 w-full my-3">
+                <button
+                  onClick={manageModal}
+                  className="float-right text-nowrap rounded-lg mt-6 px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
+                >
+                  Create Wallet
+                </button>
+              </div>
+            )}
             {uiState.loadingData ? (
               <Loader />
             ) : (

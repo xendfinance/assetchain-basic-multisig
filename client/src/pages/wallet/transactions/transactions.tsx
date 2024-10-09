@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "../../../context/UserContext";
 import { Transaction, WalletDetails } from "../../../utils/type";
-import MultiSigWallet from "../../../utils/MultiSigWallet";
+import MultiSigWallet, {
+  getMultiSig,
+} from "../../../utils/MultiSigWallet";
 import { Layout } from "../../../components/Layout";
 import { Modal } from "../../../components/Modal";
 import { showToast } from "../../../utils/toaster";
@@ -12,6 +14,7 @@ import { SAMPLEABI, SAMPLE_CONTRACT_ADDRESS } from "../../../utils/constants";
 import { NoWalletConnected } from "../../../components/NoWalletConnected";
 import { Loader } from "../../../components/Loader";
 import { ApprovalsList } from "../../../components/ApprovalsList";
+import { NotAnApproval } from "../../../components/NotAnApproval";
 
 interface FormState {
   selectedFunction: AbiInput | null;
@@ -112,6 +115,7 @@ export function WalletTransactions() {
     if (!walletAddress) return;
     try {
       setUiState({ ...uiState, loadingData: true });
+      // const { detail, _transactions } = await getWalletDetails(walletAddress);
       const { detail, _transactions } = await getWalletDetails(walletAddress);
 
       setWallet(detail);
@@ -123,7 +127,8 @@ export function WalletTransactions() {
   }
   async function getWalletDetails(address: string) {
     try {
-      const instance = new MultiSigWallet(account?.provider, address);
+      // const instance = new MultiSigWallet(account?.provider, address);
+      const instance = getMultiSig(account?.provider, address);
 
       const promise = Promise.all([
         instance.getName(),
@@ -134,10 +139,10 @@ export function WalletTransactions() {
       const [name, approvals, _transactions, balance] = await promise;
       const balanceInEth: string = account?.provider?.utils.fromWei(
         balance,
-        "ether",
+        "ether"
       );
       const detail: WalletDetails = {
-        address,
+        address: address,
         name,
         approvals,
         balance: +(+balanceInEth).toFixed(3),
@@ -155,10 +160,15 @@ export function WalletTransactions() {
       if (!account.address || !account.provider) return;
       setUiState({ ...uiState, loading: true });
       try {
-        await new MultiSigWallet(
-          account.provider,
-          wallet.address,
-        ).approveTransaction(id, walletAddress, account.address);
+        // await new MultiSigWallet(
+        //   account.provider,
+        //   wallet.address,
+        // ).approveTransaction(id, walletAddress, account.address);
+        await getMultiSig(account.provider, wallet.address).approveTransaction(
+          id,
+          walletAddress,
+          account.address
+        );
         setUiState({ ...uiState, loading: false });
         showToast("Operattion Successful", "success");
         _getWallet();
@@ -188,8 +198,8 @@ export function WalletTransactions() {
         let value = formState.inputValues[inp.name];
 
         if (value) {
-          if (inp.type === "number") {
-            value = ethers.parseEther(value.toString());
+          if (inp.type === "array") {
+            value = JSON.parse(value)
           }
           inputs.push(value);
         }
@@ -200,16 +210,22 @@ export function WalletTransactions() {
       const _interface = new ethers.Interface(formState.abi);
       const data = _interface.encodeFunctionData(
         formState.selectedFunction.name,
-        inputs,
+        inputs
       );
-      await new MultiSigWallet(
-        account.provider,
-        wallet.address,
-      ).createTransaction(
+      // await new MultiSigWallet(
+      //   account.provider,
+      //   wallet.address,
+      // ).createTransaction(
+      //   formState.contractaddress,
+      //   data,
+      //   wallet.address,
+      //   account.address,
+      // );
+      await getMultiSig(account.provider, wallet.address).createTransaction(
         formState.contractaddress,
         data,
         wallet.address,
-        account.address,
+        account.address
       );
       setUiState({ ...uiState, loading: false });
       showToast("Transaction Added!", "success");
@@ -218,6 +234,102 @@ export function WalletTransactions() {
       showToast(error.message, "failed");
       setUiState({ ...uiState, loading: false });
     }
+  }
+
+  function render() {
+    if (!account || !account.address) {
+      return <NoWalletConnected />;
+    }
+    if (uiState.loadingData) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <Loader />
+        </div>
+      );
+    }
+
+    if (
+      !account.wallet ||
+      !account.wallet.approvals.some(
+        (approval) => approval.toLowerCase() === account.address!.toLowerCase()
+      )
+    )
+      return <NotAnApproval />;
+
+    return (
+      <div className="flex flex-col w-full">
+        <div className="flex flex-row px-5 w-full my-3 justify-between items-center">
+          <h2 className="font-black">Transactions</h2>
+          <button
+            onClick={manageModal}
+            className="float-right text-nowrap rounded-lg px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
+          >
+            Add Transaction
+          </button>
+        </div>
+        <ApprovalsList
+          approvals={account && account.wallet ? account.wallet.approvals : []}
+        />
+
+        <div className="flex flex-col w-full overflow-y-auto px-5 py-5">
+          <table className="w-full text-left text-sm text-slate-500  rtl:text-right">
+            <thead className="bg-blue-50 text-xs uppercase ">
+              <tr>
+                <th scope="col" className="px-6 py-3">
+                  ID
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  To Contract address
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Approvals
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Executed
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Approve
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.length > 0 &&
+                transactions.map((e, i: any) => (
+                  <tr
+                    key={i}
+                    className="border-b bg-white-50 hover:bg-blue-50 cursor-pointer"
+                  >
+                    <td
+                      scope="row"
+                      className="whitespace-nowrap px-6 py-4 font-medium"
+                    >
+                      {i + 1}
+                    </td>
+                    <td className="px-6 py-4">{e.to}</td>
+                    <td className="px-6 py-4">{e.approvals}</td>
+                    <td className="px-6 py-4">
+                      {e.executed ? "true" : "false"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => _approve(e.id, wallet!.address)}
+                        className="text-nowrap rounded-lg mt-6 w-full px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
+                        disabled={uiState.loading || e.executed}
+                      >
+                        {uiState.loading
+                          ? "processing..."
+                          : e.executed
+                          ? "Executed"
+                          : "Approve"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -314,87 +426,7 @@ export function WalletTransactions() {
             </div>
           </div>
         </Modal>
-        {account ? (
-          <div className="flex flex-col w-full">
-            <div className="flex flex-row px-5 w-full my-3 justify-between items-center">
-              <h2 className="font-black">Transactions</h2>
-              <button
-                onClick={manageModal}
-                className="float-right text-nowrap rounded-lg px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
-              >
-                Add Transaction
-              </button>
-            </div>
-            <ApprovalsList
-              approvals={
-                account && account.wallet ? account.wallet.approvals : []
-              }
-            />
-            {uiState.loadingData ? (
-              <Loader />
-            ) : (
-              <div className="flex flex-col w-full overflow-y-auto px-5 py-5">
-                <table className="w-full text-left text-sm text-slate-500  rtl:text-right">
-                  <thead className="bg-blue-50 text-xs uppercase ">
-                    <tr>
-                      <th scope="col" className="px-6 py-3">
-                        ID
-                      </th>
-                      <th scope="col" className="px-6 py-3">
-                        To Contract address
-                      </th>
-                      <th scope="col" className="px-6 py-3">
-                        Approvals
-                      </th>
-                      <th scope="col" className="px-6 py-3">
-                        Executed
-                      </th>
-                      <th scope="col" className="px-6 py-3">
-                        Approve
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.length > 0 &&
-                      transactions.map((e, i: any) => (
-                        <tr
-                          key={i}
-                          className="border-b bg-white-50 hover:bg-blue-50 cursor-pointer"
-                        >
-                          <td
-                            scope="row"
-                            className="whitespace-nowrap px-6 py-4 font-medium"
-                          >
-                            {Number(e.id) + 1}
-                          </td>
-                          <td className="px-6 py-4">{e.to}</td>
-                          <td className="px-6 py-4">{e.approvals}</td>
-                          <td className="px-6 py-4">
-                            {e.executed ? "true" : "false"}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => _approve(e.id, wallet!.address)}
-                              className="text-nowrap rounded-lg mt-6 w-full px-3 py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
-                              disabled={uiState.loading || e.executed}
-                            >
-                              {uiState.loading
-                                ? "processing..."
-                                : e.executed
-                                  ? "Executed"
-                                  : "Approve"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : (
-          <NoWalletConnected />
-        )}
+        {render()}
       </div>
     </Layout>
   );

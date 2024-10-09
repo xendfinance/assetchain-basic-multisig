@@ -13,7 +13,7 @@ import {
 } from "../utils/script";
 import { WalletDetails } from "../utils/type";
 import { ethers } from "ethers";
-import { executedChainId } from "../utils/constants";
+import { networks } from "../utils/constants";
 
 // Define the shape of the context state
 interface AccountContextState {
@@ -67,7 +67,8 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({
       setAddress(accounts[0]);
     });
     window.ethereum.on("chainChanged", async (chainId: any) => {
-      if (chainId !== ethers.toBeHex(executedChainId)) {
+      const chainIdsInHex = networks.map((n) => ethers.toBeHex(n.chainId));
+      if (!chainIdsInHex.includes(chainId)) {
         const prompt = window.confirm(
           "Wrong Network! Click Okay to switch to Asset Chain?"
         );
@@ -75,10 +76,14 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({
           try {
             const accounts = await switchToRightNetwork();
             setAddress(accounts.length > 0 ? accounts[0] : null);
-          } catch (error) {
-
-          }
+          } catch (error) {}
         }
+      } else {
+        const _chainId = parseInt(chainId, 16)
+        const provider = await loadProvider();
+        const address = await autoConnectWallet(_chainId);
+        setProvider(provider)
+        setAddress(address ? address : null);
       }
     });
   }, []);

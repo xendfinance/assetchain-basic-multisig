@@ -1,4 +1,5 @@
-export const SAMPLE_CONTRACT_ADDRESS = '0x003F58FA209740b5953E489fFe83EEA2629aC6A9'
+export const SAMPLE_CONTRACT_ADDRESS =
+  "0x003F58FA209740b5953E489fFe83EEA2629aC6A9";
 export const SAMPLEABI = `[
     {
       "inputs": [],
@@ -98,8 +99,24 @@ export const SAMPLEABI = `[
       "stateMutability": "payable",
       "type": "receive"
     }
-  ]`
+  ]`;
 
-export const executedChainId = 42421
+export const defaultChain = 42420
 
-export const numReg = new RegExp('[0-9]')
+export const networks = [
+  { rpc: "https://mainnet-rpc.assetchain.org", chainId: 42420, explorer: 'https://scan.assetchain.org', name: "Asset Chain" },
+  { rpc: "https://enugu-rpc.assetchain.org", chainId: 42421, explorer: 'https://scan-testnet.assetchain.org', name: 'Asset Chain Testnet' },
+];
+
+export const numReg = new RegExp("[0-9]");
+
+export const _NATIVE = `0x0000000000000000000000000000000000000001`;
+export const USDT = import.meta.env.VITE_USDT_ADDRESS;
+
+export const ASSETS = [
+  {
+    symbol: "RWA",
+    token: _NATIVE,
+  },
+  { symbol: "USDT", token: USDT },
+];

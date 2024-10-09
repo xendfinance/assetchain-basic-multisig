@@ -29,4 +29,11 @@ export interface Transfer {
     to: string;
     approvals: any;
     sent: boolean;
+    token: string
+}
+
+export interface Balance {
+    balance: number;
+    symbol: string;
+    token: string
 }

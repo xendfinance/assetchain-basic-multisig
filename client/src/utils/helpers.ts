@@ -56,3 +56,17 @@ function mapSolidityType(solidityType: any) {
   
     return 'unknown';
 }
+
+export function extractWalletAndTokenFromAddressBar() {
+    const url = window.location.href;
+
+    const urlObj = new URL(url);
+
+    const pathParts = urlObj.pathname.split('/');
+    const walletAddress = pathParts[pathParts.length - 1];
+
+    // Extract token value from query parameters
+    const token = urlObj.searchParams.get('token');
+
+    return { walletAddress, token };
+}

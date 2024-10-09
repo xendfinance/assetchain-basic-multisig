@@ -1,5 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import 'hardhat-gas-reporter'
+import 'hardhat-contract-sizer'
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -10,21 +12,36 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
       {
         version: "0.8.24",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
       {
-        version: "0.6.12",
+        version: "0.8.0",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
-    ],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
+      // {
+      //   version: "0.6.12",
+      // },
+    ]
   },
   networks: {
     hardhat: {},
@@ -40,8 +57,28 @@ const config: HardhatUserConfig = {
       url: "https://enugu-rpc.assetchain.org",
       accounts: [PRIVATE_KEY_1!],
     },
-    rinkeby: {
-      url: "https://eth-rinkeby.alchemyapi.io/v2/123abc123abc123abc123abc123abcde",
+    assetchain_mainnet: {
+      url: "https://mainnet-rpc.assetchain.org",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    arbitrum_mainnet: {
+      url: "https://arb1.arbitrum.io/rpc",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    bsc_mainnet: {
+      url: "https://binance.llamarpc.com",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    base_mainnet: {
+      url: "https://mainnet.base.org",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    bitlayer_mainnet: {
+      url: "https://rpc.bitlayer.org",
+      accounts: [PRIVATE_KEY_1!],
+    },
+    ethereum_mainnet: {
+      url: "https://ethereum-rpc.publicnode.com",
       accounts: [PRIVATE_KEY_1!],
     },
   },
@@ -59,6 +96,15 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
   },
 };
 

@@ -4,7 +4,9 @@
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "dotenv": "^16.4.5",
-    "hardhat": "^2.22.5"
+    "hardhat": "^2.22.5",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-gas-reporter": "^2.2.1"
   },
   "scripts": {
     "commit": "git-cz",
@@ -22,6 +24,17 @@
     "deploy:sepolia": "npx hardhat run --network sepolia scripts/multiSigWalletFactoryDeploy.ts",
     "deploy:sample:localhost": "npx hardhat run --network localhost scripts/externalContractDeploy.ts",
     "deploy:sample:assetchain_test": "npx hardhat run --network assetchain_test scripts/externalContractDeploy.ts",
-    "deploy:sample:sepolia": "npx hardhat run --network sepolia scripts/externalContractDeploy.ts"
+    "deploy:sample:sepolia": "npx hardhat run --network sepolia scripts/externalContractDeploy.ts",
+    "deploy:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/multiSigWalletFactoryDeploy.ts",
+    "deploy:multisig:assetchain_test": "npx hardhat run --network assetchain_test scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:arbitrum_mainnet": "npx hardhat run --network arbitrum_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:bsc_mainnet": "npx hardhat run --network bsc_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:base_mainnet": "npx hardhat run --network base_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:bitlayer_mainnet": "npx hardhat run --network bitlayer_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisig:ethereum_mainnet": "npx hardhat run --network ethereum_mainnet scripts/multisigWallet.deploy.ts"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
   }
 }
