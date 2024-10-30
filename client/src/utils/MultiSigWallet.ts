@@ -108,6 +108,13 @@ class MultiSigWallet {
         (await action.estimateGas({ from: fromAddress })) * 1.4
       );
 
+      // let txn = await this._sendTransaction(
+      //   action,
+      //   gas,
+      //   walletAddress,
+      //   fromAddress
+      // );
+
       let txn = await this._sendTransaction(
         action,
         gas,

@@ -1,5 +1,4 @@
-export const SAMPLE_CONTRACT_ADDRESS =
-  "0xD3492d7Df9433b2352180dde1273bEE83Cc9AEa9";
+export const SAMPLE_CONTRACT_ADDRESS = "0xD3492d7Df9433b2352180dde1273bEE83Cc9AEa9";
 export const SAMPLEABI = `[
   {
     "inputs": [],
@@ -162,6 +161,5 @@ export const ASSETS = [
   },
   { symbol: "USDT", token: USDT },
 ];
-
 
 export const forwarderAddress = import.meta.env.VITE_FOWORDER_ADDRESS
