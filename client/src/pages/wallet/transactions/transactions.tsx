@@ -242,9 +242,9 @@ export function WalletTransactions() {
         const forwarderBalance = await account?.provider?.eth.getBalance(
           forwarderAddress
         );
-        const contractBal = await account?.provider?.eth.getBalance(
-          formState.contractaddress
-        );
+        // const contractBal = await account?.provider?.eth.getBalance(
+        //   formState.contractaddress
+        // );
         if (Number(sentAmount) > Number(forwarderBalance)) {
           throw new Error(
             `Insufficient funds in the forwarder contract, please send ${formState.nativeValue} RWA to the Contract to continue`
@@ -462,6 +462,7 @@ export function WalletTransactions() {
                     }
                   />
                 ))}
+              <label className="py-1 text-sm text-black">Native Value</label>
               <input
                 type={"number"}
                 name="native-value"
