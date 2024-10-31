@@ -79,7 +79,12 @@ contract MultisigWalletV2 {
         address token
     );
     event TransferCancelled(uint indexed id);
-    event TransactionCreated(uint indexed id, address indexed to, bytes data, uint indexed _nativeValue);
+    event TransactionCreated(
+        uint indexed id,
+        address indexed to,
+        bytes data,
+        uint indexed _nativeValue
+    );
     event TransactionApproved(uint indexed id, address indexed approver);
     event TransactionExecuted(uint indexed id, address indexed to, bytes data);
     event TransactionCancelled(uint indexed id);
@@ -298,9 +303,9 @@ contract MultisigWalletV2 {
 
         if (_transactions[id].approvals >= quorum) {
             _transactions[id].executed = true;
-            (bool success, ) = _transactions[id].to.call(
-                _transactions[id].data
-            );
+            (bool success, ) = _transactions[id].to.call{
+                value: transaction.value
+            }(_transactions[id].data);
             require(success, "Transaction execution failed");
 
             emit TransactionExecuted(
@@ -309,14 +314,6 @@ contract MultisigWalletV2 {
                 _transactions[id].data
             );
             if (transaction.value > 0) {
-                (bool transferSuccess, ) = transaction.to.call{
-                    value: transaction.value
-                }("");
-                if (!transferSuccess)
-                    revert MultisigWalletV2Errors.FailedToTransferNativeValue(
-                        transaction.to,
-                        transaction.value
-                    );
                 emit TransferSuccessfull(transaction.to, transaction.value);
             }
         }
