@@ -1,4 +1,4 @@
-import { parseEther } from "ethers";
+import { parseEther } from "ethers"
 import MultiSigWalletAbi from "../abi/MultiSigWallet.json";
 import { showToast } from "./toaster";
 import { Transaction } from "./type";
@@ -100,7 +100,7 @@ class MultiSigWallet {
     to: string,
     data: string,
     walletAddress: string,
-    fromAddress: string
+    fromAddress: string,
   ) {
     try {
       let action = await this.contract.methods.createTransaction(to, data);
@@ -119,7 +119,7 @@ class MultiSigWallet {
         action,
         gas,
         walletAddress,
-        fromAddress
+        fromAddress,
       );
       // console.log({ txn });
 

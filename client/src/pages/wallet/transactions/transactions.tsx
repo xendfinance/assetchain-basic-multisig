@@ -1,20 +1,26 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "../../../context/UserContext";
 import { Transaction, WalletDetails } from "../../../utils/type";
-import MultiSigWallet, {
-  getMultiSig,
-} from "../../../utils/MultiSigWallet";
+import MultiSigWallet, { getMultiSig } from "../../../utils/MultiSigWallet";
+
 import { Layout } from "../../../components/Layout";
 import { Modal } from "../../../components/Modal";
 import { showToast } from "../../../utils/toaster";
 import { ethers } from "ethers";
 import { abiToFunction } from "../../../utils/helpers";
 import { AbiInput } from "../../../utils/type";
-import { SAMPLEABI, SAMPLE_CONTRACT_ADDRESS } from "../../../utils/constants";
+import {
+  SAMPLEABI,
+  SAMPLE_CONTRACT_ADDRESS,
+  forwarderAddress,
+} from "../../../utils/constants";
 import { NoWalletConnected } from "../../../components/NoWalletConnected";
 import { Loader } from "../../../components/Loader";
 import { ApprovalsList } from "../../../components/ApprovalsList";
 import { NotAnApproval } from "../../../components/NotAnApproval";
+import Web3 from "web3";
+import ForwarderContractAbi from "../../../abi/ForwarderContract.json";
+const web3 = new Web3();
 
 interface FormState {
   selectedFunction: AbiInput | null;
@@ -23,6 +29,17 @@ interface FormState {
   inputValues: any;
   abi: string;
   contractaddress: string;
+  nativeValue: string;
+}
+
+const initState = {
+  selectedFunction: null,
+  functions: [],
+  useSampleAbi: true,
+  inputValues: {},
+  contractaddress: SAMPLE_CONTRACT_ADDRESS,
+  abi: SAMPLEABI,
+  nativeValue: "0",
 }
 
 export function WalletTransactions() {
@@ -34,14 +51,7 @@ export function WalletTransactions() {
     showModal: false,
     loadingData: false,
   });
-  const [formState, setFormState] = useState<FormState>({
-    selectedFunction: null,
-    functions: [],
-    useSampleAbi: true,
-    inputValues: {},
-    contractaddress: SAMPLE_CONTRACT_ADDRESS,
-    abi: SAMPLEABI,
-  });
+  const [formState, setFormState] = useState<FormState>(initState);
 
   useEffect(() => {
     _getWallet();
@@ -199,7 +209,7 @@ export function WalletTransactions() {
 
         if (value) {
           if (inp.type === "array") {
-            value = JSON.parse(value)
+            value = JSON.parse(value);
           }
           inputs.push(value);
         }
@@ -207,6 +217,12 @@ export function WalletTransactions() {
       if (formState.selectedFunction.inputs.length !== inputs.length) {
         throw new Error("Fill and Selected Function Field");
       }
+      if (Number.isNaN(formState.nativeValue))
+        throw new Error(
+          `${formState.nativeValue} is not valid value for native Value`
+        );
+      if (Number(wallet.balance) < Number(formState.nativeValue))
+        throw new Error("Insufficient Funds to send native token!");
       const _interface = new ethers.Interface(formState.abi);
       const data = _interface.encodeFunctionData(
         formState.selectedFunction.name,
@@ -221,13 +237,44 @@ export function WalletTransactions() {
       //   wallet.address,
       //   account.address,
       // );
-      await getMultiSig(account.provider, wallet.address).createTransaction(
-        formState.contractaddress,
-        data,
-        wallet.address,
-        account.address
-      );
-      setUiState({ ...uiState, loading: false });
+      const sentAmount = web3.utils.toWei(formState.nativeValue);
+      console.log(Number(formState.nativeValue) > 0, 'forward-call')
+      if (Number(formState.nativeValue) > 0) {
+        const forwarderBalance = await account?.provider?.eth.getBalance(
+          forwarderAddress
+        );
+        // const contractBal = await account?.provider?.eth.getBalance(
+        //   formState.contractaddress
+        // );
+        if (Number(sentAmount) > Number(forwarderBalance)) {
+          throw new Error(
+            `Insufficient funds in the forwarder contract, please send ${formState.nativeValue} RWA to the Contract to continue`
+          );
+        } else {
+          const i = new ethers.Interface(ForwarderContractAbi.abi);
+          const _data = i.encodeFunctionData("forwardCall", [
+            formState.contractaddress,
+            sentAmount,
+            data,
+          ]);
+          await getMultiSig(account.provider, wallet.address).createTransaction(
+            forwarderAddress!,
+            _data,
+            wallet.address,
+            account.address
+          );
+        }
+      } else {
+        await getMultiSig(account.provider, wallet.address).createTransaction(
+          formState.contractaddress,
+          data,
+          wallet.address,
+          account.address
+        );
+      }
+
+      setUiState({ ...uiState, loading: false, showModal: false });
+      setFormState(initState)
       showToast("Transaction Added!", "success");
       _getWallet();
     } catch (error: any) {
@@ -416,6 +463,17 @@ export function WalletTransactions() {
                     }
                   />
                 ))}
+              <label className="py-1 text-sm text-black">Native Value</label>
+              <input
+                type={"number"}
+                name="native-value"
+                placeholder={`Enter Value`}
+                className="w-full mt-3 border border-gray-300 px-3 py-1 text-sm text-black  focus:border-none focus:outline-none"
+                onChange={(e) =>
+                  setFormState({ ...formState, nativeValue: e.target.value })
+                }
+                defaultValue={0}
+              />
               <button
                 onClick={onSubmit}
                 className="text-nowrap rounded-lg mt-6 w-full py-3 text-[16px]/[20px] text-white capitalize bg-blue-400"
