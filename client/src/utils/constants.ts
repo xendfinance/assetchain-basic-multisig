@@ -159,7 +159,7 @@ export const ASSETS = [
     symbol: "RWA",
     token: _NATIVE,
   },
-  { symbol: "USDT", token: USDT },
+  // { symbol: "USDT", token: USDT },
 ];
 
 export const forwarderAddress = import.meta.env.VITE_FOWORDER_ADDRESS
