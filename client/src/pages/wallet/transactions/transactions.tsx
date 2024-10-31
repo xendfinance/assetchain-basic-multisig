@@ -221,8 +221,8 @@ export function WalletTransactions() {
         throw new Error(
           `${formState.nativeValue} is not valid value for native Value`
         );
-      if (Number(wallet.balance) < Number(formState.nativeValue))
-        throw new Error("Insufficient Funds to send native token!");
+      // if (Number(wallet.balance) < Number(formState.nativeValue))
+      //   throw new Error("Insufficient Funds to send native token!");
       const _interface = new ethers.Interface(formState.abi);
       const data = _interface.encodeFunctionData(
         formState.selectedFunction.name,
