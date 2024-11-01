@@ -32,7 +32,11 @@
     "deploy:multisig:bsc_mainnet": "npx hardhat run --network bsc_mainnet scripts/multisigWallet.deploy.ts",
     "deploy:multisig:base_mainnet": "npx hardhat run --network base_mainnet scripts/multisigWallet.deploy.ts",
     "deploy:multisig:bitlayer_mainnet": "npx hardhat run --network bitlayer_mainnet scripts/multisigWallet.deploy.ts",
-    "deploy:multisig:ethereum_mainnet": "npx hardhat run --network ethereum_mainnet scripts/multisigWallet.deploy.ts"
+    "deploy:multisig:ethereum_mainnet": "npx hardhat run --network ethereum_mainnet scripts/multisigWallet.deploy.ts",
+    "deploy:multisigv2:assetchain_test": "npx hardhat run --network assetchain_test scripts/v2/multisigWalletV2.ts",
+    "deploy:factoryv2:assetchain_test": "npx hardhat run --network assetchain_test scripts/v2/multisigWalletFactoryV2.ts",
+    "deploy:multisigv2:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/v2/multisigWalletV2.ts",
+    "deploy:factoryv2:assetchain_mainnet": "npx hardhat run --network assetchain_mainnet scripts/v2/multisigWalletFactoryV2.ts"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2"
