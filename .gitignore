@@ -5,7 +5,7 @@ contracts/*.env
 contracts/artifacts
 contracts/cache
 contracts/typechain-types
-*yarn.lock
+# *yarn.lock
 *package-lock.json
 node_modules/
 contracts/ignition/deployments/
